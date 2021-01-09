@@ -11,7 +11,13 @@ do
         echo "Creating node ..."
         multipass launch -n k3s-node-${N} -c 1 -m 1024M
     else
-        echo "Node already exists"
+        if [ "$( echo $NODE_STATUS | awk '{print $2;}' )" == "Stopped" ]
+        then
+            echo "Node already exists. Starting ..."
+            multipass start k3s-node-${N}
+        else
+            echo "Node already exists"
+        fi
     fi
 done
 
