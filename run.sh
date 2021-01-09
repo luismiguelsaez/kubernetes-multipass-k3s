@@ -1,41 +1,42 @@
 #!/usr/bin/env bash
 
-NODES=3
+NODES_NUM=3
+NODES_NAME_PREFFIX="k3s-node"
 
-for N in $(seq $NODES)
+for N in $(seq $NODES_NUM)
 do
-    NODE_STATUS=$( multipass list | grep k3s-node-${N} )
+    NODE_STATUS=$( multipass list | grep ${NODES_NAME_PREFFIX}-${N} )
 
     if [ -z "$NODE_STATUS" ]
     then
-        echo "Creating node ..."
-        multipass launch -n k3s-node-${N} -c 1 -m 1024M
+        echo -e "\e[32mCreating node ${NODES_NAME_PREFFIX}-${N} ...\e[0m"
+        multipass launch -n ${NODES_NAME_PREFFIX}-${N} -c 1 -m 1024M >/dev/null 2>&1
     else
         if [ "$( echo $NODE_STATUS | awk '{print $2;}' )" == "Stopped" ]
         then
-            echo "Node already exists. Starting ..."
-            multipass start k3s-node-${N}
+            echo -e "\e[32mNode ${NODES_NAME_PREFFIX}-${N} already exists. Starting ...\e[32m"
+            multipass start ${NODES_NAME_PREFFIX}-${N} >/dev/null 2>&1
         else
-            echo "Node already exists"
+            echo -e "\e[32mNode ${NODES_NAME_PREFFIX}-${N} already exists\e[0m"
         fi
     fi
 done
 
-echo "Initializing node k3s-node-1 ..."
-multipass exec  k3s-node-1 -- bash -c "curl -sfL https://get.k3s.io | sh -"
+echo -e "\e[32mInitializing node ${NODES_NAME_PREFFIX}-1 ...\e[0m"
+multipass exec ${NODES_NAME_PREFFIX}-1 -- bash -c "curl -sfL https://get.k3s.io | sh -" #>/dev/null 2>&1
 
-TOKEN=$(multipass exec k3s-node-1 sudo cat /var/lib/rancher/k3s/server/node-token)
-IP=$(multipass info k3s-node-1 | grep IPv4 | awk '{print $2}')
+TOKEN=$(multipass exec ${NODES_NAME_PREFFIX}-1 sudo cat /var/lib/rancher/k3s/server/node-token)
+IP=$(multipass info ${NODES_NAME_PREFFIX}-1 | grep IPv4 | awk '{print $2}')
 
-for N in $(seq $NODES)
+for N in $(seq $NODES_NUM)
 do
     if [ $N -gt 1 ]
     then
-        echo "Initializing node k3s-node-${N} ..."
-        multipass exec k3s-node-${N} -- \
-            bash -c "curl -sfL https://get.k3s.io | K3S_URL=\"https://$IP:6443\" K3S_TOKEN=\"$TOKEN\" sh -"
+        echo -n "\e[32mInitializing node ${NODES_NAME_PREFFIX}-${N} ...\e[0m"
+        multipass exec ${NODES_NAME_PREFFIX}-${N} -- \
+            bash -c "curl -sfL https://get.k3s.io | K3S_URL=\"https://$IP:6443\" K3S_TOKEN=\"$TOKEN\" sh -" #>/dev/null 2>&1
     fi
 done
 
-echo "Getting kubeconfig"
-multipass exec k3s-node-1 sudo cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$IP/" > k3s.yml
+echo -n "\e[32mGetting kubeconfig\e[0m"
+multipass exec ${NODES_NAME_PREFFIX}-1 sudo cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$IP/" > k3s.yml
