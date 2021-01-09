@@ -32,11 +32,11 @@ for N in $(seq $NODES_NUM)
 do
     if [ $N -gt 1 ]
     then
-        echo -n "\e[32mInitializing node ${NODES_NAME_PREFFIX}-${N} ...\e[0m"
+        echo -e "\e[32mInitializing node ${NODES_NAME_PREFFIX}-${N} ...\e[0m"
         multipass exec ${NODES_NAME_PREFFIX}-${N} -- \
             bash -c "curl -sfL https://get.k3s.io | K3S_URL=\"https://$IP:6443\" K3S_TOKEN=\"$TOKEN\" sh -" #>/dev/null 2>&1
     fi
 done
 
-echo -n "\e[32mGetting kubeconfig\e[0m"
+echo -e "\e[32mGetting kubeconfig\e[0m"
 multipass exec ${NODES_NAME_PREFFIX}-1 sudo cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$IP/" > k3s.yml
